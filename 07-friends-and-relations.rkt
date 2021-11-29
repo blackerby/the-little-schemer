@@ -2,6 +2,17 @@
 
 (require test-engine/racket-tests)
 
+(define atom?
+  (lambda (x)
+    (and (not (pair? x)) (not (null? x)))))
+
+(define lat?
+  (lambda (l)
+    (cond
+      [(null? l) #true]
+      [(atom? (car l)) (lat? (cdr l))]
+      [else #false])))
+
 (define member?
   (lambda (a lat)
     (cond
@@ -156,5 +167,92 @@
       [(empty? (rest l-set)) (first l-set)] ; standard clause for nonempty list
       [else (intersect (first l-set)
                        (intersectall (rest l-set)))])))
+
+(check-expect (a-pair? '(pear pear)) #true)
+(check-expect (a-pair? '(3 7)) #true)
+(check-expect (a-pair? '((2) (pair))) #true)
+(check-expect (a-pair? '(full (house))) #true)
+#;(define a-pair?
+  (lambda (l)
+      (and (or (atom? (first l))
+               (lat? (first l)))
+           (or (atom? (first (rest l)))
+               (lat? (first (rest l))))
+           (empty? (rest (rest l))))))
+
+; book version
+(define a-pair?
+  (lambda (x)
+    (cond
+      [(atom? x) #false]
+      [(empty? x) #false]
+      [(empty? (rest x)) #false]
+      [(empty? (rest (rest x))) #true]
+      [else #false])))
+
+;;; skipping the first, second, third functions, will use what's built into racket instead
+
+(define build
+  (lambda (s1 s2)
+    (cons s1 (cons s2 '()))))
+
+(define firsts ; revision of my implementation in 03-cons-the-magnificent.rkt, more in line with book
+  (lambda (l)
+    (cond
+      [(empty? l) '()]
+      [else
+       (cons (first (first l))
+             (firsts (rest l)))])))
+
+(check-expect (fun? '((8 3) (4 2) (7 6) (6 2) (3 4))) #true)
+(define fun?
+  (lambda (rel)
+    (set? (firsts rel))))
+
+(check-expect (revrel '((a 8) (pie pumpkin) (sick got)))
+              '((8 a) (pumpkin pie) (got sick)))
+#;(define revrel
+  (lambda (rel)
+    (cond
+      [(empty? rel) '()]
+      [else (cons (build (second (first rel)) (first (first rel)))
+                  (revrel (rest rel)))])))
+
+(define revpair
+  (lambda (pair)
+    (build (second pair) (first pair))))
+
+(define revrel
+  (lambda (rel)
+    (cond
+      [(empty? rel) '()]
+      [else (cons (revpair (first rel))
+                  (revrel (rest rel)))])))
+
+(check-expect (fullfun? '((8 3) (4 2) (7 6) (6 2) (3 4))) #false)
+(check-expect (fullfun? '((8 3) (4 8) (7 6) (6 2) (3 4))) #true)
+(check-expect (fullfun? '((grape raisin) (plum prune) (stewed prune))) #false)
+(check-expect (fullfun? '((grape raisin) (plum prune) (stewed grape))) #true)
+(define fullfun?
+  (lambda (fun)
+    (and (set? (firsts fun)) ; not in books implementation; written to ensure fun is actually fun!
+         (set? (seconds fun)))))
+
+(define seconds
+  (lambda (l)
+    (cond
+      [(empty? l) '()]
+      [else (cons (first (rest (first l)))
+                  (seconds (rest l)))])))
+
+(check-expect (one-to-one? '((8 3) (4 2) (7 6) (6 2) (3 4))) #false)
+(check-expect (one-to-one? '((8 3) (4 8) (7 6) (6 2) (3 4))) #true)
+(check-expect (one-to-one? '((grape raisin) (plum prune) (stewed prune))) #false)
+(check-expect (one-to-one? '((grape raisin) (plum prune) (stewed grape))) #true)
+(define one-to-one? ; copied from book. wow!
+  (lambda (fun)
+    (and (fun? fun) ; extra line to make more similar to fullfun?
+         (fun? (revrel fun)))))
+; book implementation assumes fun is a function
 
 (test)
