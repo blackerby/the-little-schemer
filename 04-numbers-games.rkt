@@ -142,7 +142,7 @@
 (define pick
   (lambda (n lat)
     (cond
-      [(= 1 n) (first lat)] ; book version: [(zero? (sub1 n)) (cdr lat)]
+      [(= 1 n) (first lat)] ; book version: [(zero? (sub1 n)) (first lat)]
       [else (pick (sub1 n) (rest lat))])))
 
 (check-expect (rempick 3 '(hotdogs with hot mustard)) '(hotdogs with mustard))
